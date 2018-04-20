@@ -244,12 +244,16 @@ class Registration extends CI_Controller {
                 )));
             }
             $quota_results = $this->people->get_race_quota();
-            if (!$quota_results['rdb_m_status'] and $rdb_m_count > 0) exit(err_msg('1104'));
-            if (!$quota_results['rdb_f_status'] and $rdb_f_count > 0) exit(err_msg('1105'));
-            if (!$quota_results['rdb_elite_status'] and $rdb_elite_count > 0) exit(err_msg('1106'));
-            if (!$quota_results['race_m_status'] and $race_m_count > 0) exit(err_msg('1102'));
-            if (!$quota_results['race_f_status'] and $race_f_count > 0) exit(err_msg('1103'));
-            if (!$quota_results['race_elite_status'] and $race_elite_count > 0) exit(err_msg('1107'));
+            if ($school_id == $GLOBALS['HOST_ID']) {
+            } else {
+                if (!$quota_results['rdb_m_status'] and $rdb_m_count > 0) exit(err_msg('1104'));
+                if (!$quota_results['rdb_f_status'] and $rdb_f_count > 0) exit(err_msg('1105'));
+                if (!$quota_results['rdb_elite_status'] and $rdb_elite_count > 0) exit(err_msg('1106'));
+                if (!$quota_results['race_m_status'] and $race_m_count > 0) exit(err_msg('1102'));
+                if (!$quota_results['race_f_status'] and $race_f_count > 0) exit(err_msg('1103'));
+                if (!$quota_results['race_elite_status'] and $race_elite_count > 0) exit(err_msg('1107'));
+            }
+
 
             $bill = 0;
             $ind_db = $this->people->get_people_from_school($school_id);

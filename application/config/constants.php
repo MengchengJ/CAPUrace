@@ -173,6 +173,7 @@ $RACE = array(
 );
 
 
+
 $RACE_M_QUOTA = 190;
 $RACE_ELITE_QUOTA = 190;
 $RACE_F_QUOTA = 190;
@@ -214,6 +215,10 @@ $ADMIN = array(
 $ACCOUNTANT_PASS = '06a425938c47763655645989352a0612';
 $PRESIDENT_PASS = '2e1d0fda2f78ff268787c87deeb730cf';
 
+/*
+ *  Host user ID, only updated on race server !!! ONLY UPDATED ON RACE SERVER!!!
+ */
+$HOST_ID = 0;
 /*
  * Documentation titles.
  */
