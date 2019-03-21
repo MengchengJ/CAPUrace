@@ -101,29 +101,34 @@ if (! function_exists('individual_decode')) {
  */
 if (! function_exists('get_bill')) {
     function get_bill($data) {
-        if ($data['race'] && $data['ifteam']) {
-            $race_fee = 50;
-        } else if (! $data['ifrace']) {
-            $race_fee = 0;
+        if ($data['ifrace'] && $data['dinner']) {
+            $dinner_fee = 40;
+        } else if (! $data['dinner']) {
+            $dinner_fee = 0;
         } else {
-            $race_fee = 30;
+            $dinner_fee = 40;
         }
-        $race_num = ($data['race'] != 0) + $data['ifteam'] + $data['rdb'];
+        if ($data['ifrace'] || !$data['lunch']) {
+            $lunch_fee = 0;
+        } else {
+            $lunch_fee = 20;
+        }
+        $race_num = $data['race'] + $data['race_f'] + $data['race_elite'] + $data['ifteam'] + $data['rdb'] + $data['rdb_f'] + $data['rdb_elite'];
         switch ($race_num) {
             case 0:
                 $race_fee = 0;
                 break;
             case 1:
-                $race_fee = 60;
+                $race_fee = 80;
                 break;
             case 2:
-                $race_fee = 85;
+                $race_fee = 100;
                 break;
             case 3:
-                $race_fee = 90;
+                $race_fee = 120;
                 break;
         }
-        $fee = $race_fee + 20 * $data['dinner'] + 20 * $data['lunch'] + $GLOBALS['ACCO_FEE'][$data['accommodation']];
+        $fee = $race_fee + $dinner_fee + $lunch_fee;
         return $fee;
     }
 }
@@ -154,11 +159,28 @@ if (! function_exists('validate_mobile')) {
  * Validation for id number.
  */
 if (! function_exists('validate_id_number')) {
-    function validate_id_number($id_number, $id_type) {
+    function validate_id_number($id_number, $id_type, $gender) {
         if ($id_type == "passport") return true;
-        if ($id_type == "identity" && in_array(strlen($id_number), array(15, 18))) return true;
-        // NOTE(huxuan): We may add more validation here in the future.
-        // NOTE(Luolc): Take passport validation into consideration later.
+        if ($id_type == "identity") {
+            if (strlen($id_number) == 15){
+                if (substr($id_number, 14, 1) % 2 == (2 - $gender)) {
+                    return true;
+                }
+            }
+            if (strlen($id_number) == 18) {
+                $map = array(1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2);
+                $sum = 0;
+                for ($i = 17; $i > 0; $i--) {
+                    $s = pow(2, $i) % 11;
+                    $sum += $s * substr($id_number, (17 - $i), 1);
+                }
+                if ($map[$sum % 11] == substr($id_number, 17, 1)) {
+                    if (substr($id_number, 16, 1) % 2 == (2 - $gender)) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 }

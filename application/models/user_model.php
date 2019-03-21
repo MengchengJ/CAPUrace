@@ -148,6 +148,16 @@ class User_model extends CI_Model {
     }
 
     /*
+     * Reset the user to be editable.
+     * ====argument====
+     * $id, the id of the user to reset.
+     */
+    public function reset_editable($id) {
+        $reseteditable = array('editable' => TRUE);
+        $this->db->where('id', $id)->update('users', $reseteditable);
+    }
+
+    /*
      * Set the bill to the user.
      */
     public function set_bill($id, $bill) {
@@ -185,6 +195,14 @@ class User_model extends CI_Model {
         $user_info = $this->get_user_by_email($mail);
         $token = md5($user_info['mail'] . $user_info['password'] . time());
         return $token;
+    }
+
+    /*
+     * Get the id of the user.
+     */
+    public function get_id($mail) {
+        $query = $this->get_user_by_email($mail);
+        return $query['id'];
     }
 
     /*
@@ -230,6 +248,39 @@ class User_model extends CI_Model {
      */
     public function freeze($id) {
         $this->db->where('id', $id)->update('users', array('editable' => 0));
+    }
+
+    /*
+     * This function query the information of a school from database and judge if it has the 
+     * qualification to participate in campus race, write the result into database and 
+     * return the result;
+     */
+    public function campus_race_verify($id) {
+        $query = $this->db->where('deleted', 0)->where('school_id', $id)->where('ifrace != ', 0)->get('people');
+        $people_num = $query->num_rows();
+        $people_team_num = 0;
+        $people_rdb_m_num = 0;
+        $people_rdb_f_num = 0;
+        $people_race_m_num = 0;
+        $people_race_f_num = 0;
+        foreach ($query->result() as $row)
+        {
+            $people_team_num   +=  $row->ifteam;
+            $people_rdb_m_num  += $row->rdb;
+            $people_rdb_f_num  += $row->rdb_f;
+            $people_race_m_num += $row->race;
+            $people_race_f_num += $row->race_f;
+            
+        }
+        $people_race_m_num = $people_race_m_num  ? 1 : 0;
+        $people_race_f_num = $people_race_f_num  ? 1 : 0;
+        $people_team_num   = $people_team_num    ? 1 : 0;
+        $people_rdb_m_num  = $people_rdb_m_num   ? 1 : 0;
+        $people_rdb_f_num  = $people_rdb_f_num   ? 1 : 0;
+        $race_num = $people_race_m_num + $people_race_f_num + $people_rdb_m_num + $people_rdb_f_num + $people_team_num; 
+        $flag = $people_num >= 3 && $race_num >= 2;
+        $this->db->where('id', $id)->update('users', array('campusrace' => $flag));
+        return $flag ;
     }
 
     /*

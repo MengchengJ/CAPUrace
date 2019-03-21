@@ -19,7 +19,7 @@ class Admin extends CI_Controller {
         $this->load->view('header_admin');
         $this->load->view('footer_admin');
     }
-    
+
     public function registering() {
         $this->load->view('header_admin');
         $data['registering'] = $this->user->get_registering();
@@ -40,7 +40,7 @@ class Admin extends CI_Controller {
             echo 0;
         }
     }
-    
+
     public function pay() {
         if ($this->input->server('REQUEST_METHOD') == 'GET') {
             $data['payment'] = $this->user->get_verified();
@@ -56,16 +56,26 @@ class Admin extends CI_Controller {
                     'msg' => '您没有操作权限!'
                 );
             } else {
-                $this->load->library('email');
                 $data = $this->input->post();
-                $this->user->set_paid($data['id']);
-                $query= $this->user->get_user_by_id($data['id']);
-                $mail = $query['mail'];
-                $this->email->send_fee_received_mail($mail, $data['school'], $data['bill']);
-                $response = array(
-                    'code' => '0',
-                    'msg' => '操作成功!'
-                );
+                if ($data['operation'] == "set_paid") {
+                    $this->load->library('email');
+                    $this->user->set_paid($data['id']);
+                    $query= $this->user->get_user_by_id($data['id']);
+                    $mail = $query['mail'];
+                    $this->email->send_fee_received_mail($mail, $data['school'], $data['bill']);
+                    $response = array(
+                        'code' => '0',
+                        'msg' => '操作成功!'
+                    );
+                }
+                if ($data['operation'] == "reset_editable") {
+                    $this->load->library('email');
+                    $this->user->reset_editable($data['id']);
+                    $response = array(
+                        'code' => '0',
+                        'msg' => '操作成功!'
+                    );
+                }
             }
             exit(json_encode($response));
         }
@@ -115,22 +125,13 @@ class Admin extends CI_Controller {
         $data['npaid'] = $this->db->query('select count(*) as npaid from users where paid=1;')->result_array()[0]['npaid'];
         $data['nlook'] = $this->db->query('select count(*) as nlook from people where deleted=0 and ifrace=0;')->result_array()[0]['nlook'];
         $data['nrace'] = $this->db->query('select count(*) as nrace from people where deleted=0 and ifrace=1;')->result_array()[0]['nrace'];
-        $data['nmale'] = $this->db->query('select count(*) as nmale from people where deleted=0 and ifrace=1 and race=1;')->result_array()[0]['nmale'];
-        $data['nmale_expert'] = $this->db->query('select count(*) as nmale_expert from people where deleted=0 and ifrace=1 and race=2;')->result_array()[0]['nmale_expert'];
-        $data['nmale_rdb'] = $this->db->query('select count(*) as nmale_rdb from people where deleted=0 and rdb=1;')->result_array()[0]['nmale_rdb'];
-        $data['nfemale'] = $this->db->query('select count(*) as nfemale from people where deleted=0 and ifrace=1 and race=3;')->result_array()[0]['nfemale'];
+        $data['nmale_xc'] = $this->db->query('select count(*) as nmale_xc from people where deleted=0 and ifrace=1 and race=1;')->result_array()[0]['nmale_xc'];
+        $data['nmale_xc_elite'] = $this->db->query('select count(*) as nmale_xc_elite from people where deleted=0 and ifrace=1 and race_elite=1;')->result_array()[0]['nmale_xc_elite'];
+        $data['nfemale_xc'] = $this->db->query('select count(*) as nfemale_xc from people where deleted=0 and ifrace=1 and race_f=1;')->result_array()[0]['nfemale_xc'];
+        $data['nmale_rdb'] = $this->db->query('select count(*) as nmale_rdb from people where deleted=0 and ifrace=1 and rdb=1;')->result_array()[0]['nmale_rdb'];
+        $data['nmale_rdb_elite'] = $this->db->query('select count(*) as nmale_rdb_elite from people where deleted=0 and ifrace=1 and rdb_elite=1;')->result_array()[0]['nmale_rdb_elite'];
+        $data['nfemale_rdb'] = $this->db->query('select count(*) as nfemale_rdb from people where deleted=0 and ifrace=1 and rdb_f=1;')->result_array()[0]['nfemale_rdb'];
         $data['nteams'] = $this->db->query('select count(*) as nteams from team where deleted=0;')->result_array()[0]['nteams'];
-        $accommodation = $this->db->query('select count(*) as live from people where deleted=0 group by accommodation;')->result_array();
-        if (empty($accommodation[1])) {
-            $data['hotel'] = 0;
-        } else {
-            $data['hotel'] = $accommodation[1]['live'];
-        }
-        if (empty($accommodation[2])) {
-            $data['tent'] = 0;
-        } else {
-            $data['tent'] = $accommodation[2]['live'];
-        }
         $data['dinner'] = $this->db->query('select count(*) as dinner from people where deleted=0 and dinner=1;')->result_array()[0]['dinner'];
         $data['lunch'] = $this->db->query('select count(*) as lunch from people where deleted=0 and lunch=1;')->result_array()[0]['lunch'];
 
@@ -145,13 +146,11 @@ class Admin extends CI_Controller {
             ->setCellValue('B1', '姓名')
             ->setCellValue('C1', '性别')
             ->setCellValue('D1', '身份证号')
-            ->setCellValue('E1', '组别')
-            ->setCellValue('F1', '协会名称')
-            ->setCellValue('G1', '学校')
-            ->setCellValue('H1', '地区')
-            ->setCellValue('I1', '邮政编码')
-            ->setCellValue('J1', '手机号');
-        $race = $GLOBALS['CAPURACE'];
+            ->setCellValue('E1', '协会名称')
+            ->setCellValue('F1', '学校')
+            ->setCellValue('G1', '地区')
+            ->setCellValue('H1', '邮政编码')
+            ->setCellValue('I1', '手机号');
         $i = 2;
         foreach ($data as $key => $item) {
             $school = $this->user->get_user_by_id($item['school_id']);
@@ -162,13 +161,12 @@ class Admin extends CI_Controller {
                 ->setCellValue('A' . $i, $i - 1)
                 ->setCellValue('B' . $i, $item['name'])
                 ->setCellValue('C' . $i, $GLOBALS['GENDER'][$item['gender']])
-                ->setCellValue('D' . $i, "'" . $item['id_number'])
-                ->setCellValue('E' . $i, $race[$item['race']])
-                ->setCellValue('F' . $i, $school['association_name'])
-                ->setCellValue('G' . $i, $school['school'])
-                ->setCellValue('H' . $i, $GLOBALS['PROVINCES_SHORT'][$school['province']])
-                ->setCellValue('I' . $i, $school['zipcode'])
-                ->setCellValue('J' . $i, "'" . $item['tel']);
+                ->setCellValueExplicit('D' . $i, $item['id_number'], PHPExcel_Cell_DataType::TYPE_STRING)
+                ->setCellValue('E' . $i, $school['association_name'])
+                ->setCellValue('F' . $i, $school['school'])
+                ->setCellValue('G' . $i, $GLOBALS['PROVINCES_SHORT'][$school['province']])
+                ->setCellValue('H' . $i, $school['zipcode'])
+                ->setCellValue('I' . $i, $item['tel']);
             $i++;
         }
     }
@@ -188,90 +186,77 @@ class Admin extends CI_Controller {
         $excel->getDefaultStyle()
             ->getNumberFormat()
             ->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_TEXT);
-        $filename = '第十五届全国高校自行车交流赛总表' . '.xlsx';
+        $filename = '第十六届全国高校自行车交流赛总表' . '.xlsx';
 
         // Sheet 1: the information of all paid users.
         $excel->setActiveSheetIndex(0)->setTitle('高校信息');
         $excel->getActiveSheet()
-            ->setCellValue('A1', '学校名称')
-            ->setCellValue('B1', '车协名称')
-            ->setCellValue('C1', '领队姓名')
-            ->setCellValue('D1', '电子邮箱')
-            ->setCellValue('E1', '手机号')
-            ->setCellValue('F1', '邮寄地址')
-            ->setCellValue('G1', '邮政编码')
-            ->setCellValue('H1', '费用合计');
+            ->setCellValue('A1', '学校ID')
+            ->setCellValue('B1', '学校名称')
+            ->setCellValue('C1', '车协名称')
+            ->setCellValue('D1', '领队姓名')
+            ->setCellValue('E1', '电子邮箱')
+            ->setCellValue('F1', '手机号')
+            ->setCellValue('G1', '邮寄地址')
+            ->setCellValue('H1', '邮政编码')
+            ->setCellValue('I1', '所属地区')
+            ->setCellValue('J1', '费用合计');
 
         $users = $this->user->get_paid();
         foreach ($users as $key => $item) {
             $i = $key + 2;
             $excel->getActiveSheet()
-                ->setCellValue('A' . $i, $item['school'])
-                ->setCellValue('B' . $i, $item['association_name'])
-                ->setCellValue('C' . $i, $item['leader'])
-                ->setCellValue('D' . $i, $item['mail'])
-                ->setCellValue('E' . $i, "'" . $item['tel'])
-                ->setCellValue('F' . $i, $item['address'])
-                ->setCellValue('G' . $i, $item['zipcode'])
-                ->setCellValue('H' . $i, $item['bill']);
+                ->setCellValue('A' . $i, $item['id'])
+                ->setCellValue('B' . $i, $item['school'])
+                ->setCellValue('C' . $i, $item['association_name'])
+                ->setCellValue('D' . $i, $item['leader'])
+                ->setCellValue('E' . $i, $item['mail'])
+                ->setCellValue('F' . $i, $item['tel'])
+                ->setCellValue('G' . $i, $item['address'])
+                ->setCellValue('H' . $i, $item['zipcode'])
+                ->setCellValue('I' . $i, $GLOBALS['PROVINCES_SHORT'][$item['province']])
+                ->setCellValue('J' . $i, $item['bill']);
         }
 
-        // Sheet 2: 男子大众组
+        // Sheet 2: 男子山地大众组
         $excel->createSheet(1);
-        $excel->setActiveSheetIndex(1)->setTitle('男子大众组');
+        $excel->setActiveSheetIndex(1)->setTitle('男子山地大众组');
         $male = $this->db->where('deleted', 0)->where('race', 1)->get('people')->result_array();
         $this->_fill_individual($excel, $male);
 
-
-        // Sheet 3: 男子精英组
+        // Sheet 3: 男子山地精英组
         $excel->createSheet(2);
-        $excel->setActiveSheetIndex(2)->setTitle('男子精英组');
-        $male_expert = $this->db->where('deleted', 0)->where('race', 2)->get('people')->result_array();
-        $this->_fill_individual($excel, $male_expert);
-        
-        // Sheet 4: 女子组
+        $excel->setActiveSheetIndex(2)->setTitle('男子山地精英组');
+        $male = $this->db->where('deleted', 0)->where('race_elite', 1)->get('people')->result_array();
+        $this->_fill_individual($excel, $male);
+
+        // Sheet 4: 女子山地组
         $excel->createSheet(3);
-        $excel->setActiveSheetIndex(3)->setTitle('女子组');
-        $female = $this->db->where('deleted', 0)->where('race', 3)->get('people')->result_array();
+        $excel->setActiveSheetIndex(3)->setTitle('女子山地组');
+        $female = $this->db->where('deleted', 0)->where('race_f', 1)->get('people')->result_array();
         $this->_fill_individual($excel, $female);
 
-
-        // Sheet 5: 住宿表
+        // Sheet 5: 男子公路大众组
         $excel->createSheet(4);
-        $excel->setActiveSheetIndex(4)->setTitle('住宿总表');
-        $live = $this->db->where('deleted', 0)->where('accommodation != 0')
-            ->order_by('gender', 'asc')->order_by('accommodation', 'asc')
-            ->order_by('school_id', 'asc')->get('people')->result_array();
-        $excel->getActiveSheet()
-            ->setCellValue('A1', '序号')
-            ->setCellValue('B1', '姓名')
-            ->setCellValue('C1', '性别')
-            ->setCellValue('D1', '证件类型')
-            ->setCellValue('E1', '证件编号')
-            ->setCellValue('F1', '学校')
-            ->setCellValue('G1', '手机号')
-            ->setCellValue('H1', '住宿类型');
-        $i = 2;
-        foreach ($live as $key => $item) {
-            $school = $this->user->get_user_by_id($item['school_id']);
-            if (! $school['paid']) {
-                continue;
-            }
-            $excel->getActiveSheet()
-                ->setCellValue('A' . $i, $i - 1)
-                ->setCellValue('B' . $i, $item['name'])
-                ->setCellValue('C' . $i, $GLOBALS['GENDER'][$item['gender']])
-                ->setCellValue('D' . $i, $GLOBALS['ID_TYPE'][$item['id_type']])
-                ->setCellValue('E' . $i, "'" . $item['id_number'])
-                ->setCellValue('F' . $i, $school['school'])
-                ->setCellValue('G' . $i, $item['tel'])
-                ->setCellValue('H' . $i, $GLOBALS['ACCOMMODATION'][$item['accommodation']]);
-            $i++;
-        }
+        $excel->setActiveSheetIndex(4)->setTitle('男子公路大众组');
+        $rdb_male = $this->db->where('deleted', 0)->where('rdb', 1)->get('people')->result_array();
+        $this->_fill_individual($excel, $rdb_male);
 
-        // Sheet 6: 晚餐表
+        // Sheet 6: 男子公路精英组
         $excel->createSheet(5);
-        $excel->setActiveSheetIndex(5)->setTitle('第一天晚餐表');
+        $excel->setActiveSheetIndex(5)->setTitle('男子公路精英组');
+        $rdb_male = $this->db->where('deleted', 0)->where('rdb_elite', 1)->get('people')->result_array();
+        $this->_fill_individual($excel, $rdb_male);
+
+        // Sheet 7: 女子公路组
+        $excel->createSheet(6);
+        $excel->setActiveSheetIndex(6)->setTitle('女子公路组');
+        $rdb_female = $this->db->where('deleted', 0)->where('rdb_f', 1)->get('people')->result_array();
+        $this->_fill_individual($excel, $rdb_female);
+
+        // Sheet 8: 5日两餐表
+        $excel->createSheet(7);
+        $excel->setActiveSheetIndex(7)->setTitle('5日午餐晚餐');
         $dinner = $this->db->where('deleted', 0)->where('dinner', 1)->order_by('school_id', 'asc')->get('people')->result_array();
         $excel->getActiveSheet()
             ->setCellValue('A1', '序号')
@@ -294,11 +279,9 @@ class Admin extends CI_Controller {
             $i++;
         }
 
-
-
-        // Sheet 7: 午餐表
-        $excel->createSheet(6);
-        $excel->setActiveSheetIndex(6)->setTitle('第二天午餐表');
+        // Sheet 9: 6日午餐表
+        $excel->createSheet(8);
+        $excel->setActiveSheetIndex(8)->setTitle('6日午餐表');
         $lunch = $this->db->where('deleted', 0)->where('lunch', 1)->order_by('school_id', 'asc')->get('people')->result_array();
         $excel->getActiveSheet()
             ->setCellValue('A1', '序号')
@@ -321,10 +304,9 @@ class Admin extends CI_Controller {
             $i++;
         }
 
-
-        // Sheet 8: 团体赛表
-        $excel->createSheet(7);
-        $excel->setActiveSheetIndex(7)->setTitle('团体赛表');
+        // Sheet 10: 团体赛表
+        $excel->createSheet(9);
+        $excel->setActiveSheetIndex(9)->setTitle('团体赛表');
         $teams = $this->db->where('deleted', 0)->get('team')->result_array();
         $excel->getActiveSheet()
             ->setCellValue('A1', '序号')
@@ -353,11 +335,11 @@ class Admin extends CI_Controller {
             $i += 4;
         }
 
-        // Sheet 9: 公路赛表
-        $excel->createSheet(8);
-        $excel->setActiveSheetIndex(8)->setTitle('男子公路组');
-        $male_expert = $this->db->where('deleted', 0)->where('rdb', 1)->get('people')->result_array();
-        $this->_fill_individual($excel, $male_expert);
+        // Sheet 11: 全体运动员信息表
+        $excel->createSheet(10);
+        $excel->setActiveSheetIndex(10)->setTitle('全体运动员信息');
+        $all_racer = $this->db->where('deleted', 0)->where('ifrace', 1)->get('people')->result_array();
+        $this->_fill_individual($excel, $all_racer);
 
         // ============================================================
         // Wrap up the file.
@@ -371,7 +353,8 @@ class Admin extends CI_Controller {
 
         $objWriter = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
         $objWriter->save('php://output');
-        redirect(site_url('admin'));
+        #redirect(site_url('admin'));
+        exit;
     }
 
     public function _fill_ind_in_team($excel, $key, $i, $school) {
@@ -432,36 +415,4 @@ class Admin extends CI_Controller {
         }
     }
 
-    public function clear() {
-        header('Content-Type: application/json');
-        if ($this->session->userdata('admin_pass') != $GLOBALS['PRESIDENT_PASS']) {
-            $response = array(
-                'code' => '1',
-                'msg' => '您没有操作权限!'
-            );
-        } else {
-            $this->people->clear();
-            $users = $this->user->get_all();
-            foreach ($users as $user) {
-                // Re-calculate all users' bill.
-                $people = $this->people->get_people_from_school($user['id']);
-                $bill = 0;
-                foreach ($people as $person) {
-                    // If a person has only RDB and not paid, he will be set to non-athlete.
-                    if ($person['race'] == 0 and $person['ifteam'] == 0 and $person['rdb'] == 0) {
-                        $person['ifrace'] = 0;
-                    }
-                    $person['fee'] = get_bill($person);
-                    $this->people->update_individual($person['id'], $person);
-                    $bill += $person['fee'];
-                }
-                $this->user->set_bill($user['id'], $bill);
-            }
-            $response = array(
-                'code' => '0',
-                'msg' => '未确认的公路赛报名者已经全部清理完毕！'
-            );
-        }
-        exit(json_encode($response));
-    }
 }

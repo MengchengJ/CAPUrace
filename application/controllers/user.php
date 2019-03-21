@@ -84,7 +84,7 @@ class User extends CI_Controller {
 
          if ($this->input->server('REQUEST_METHOD') == 'GET') {
              $this->load->view('header_homepage');
-             $this->load->view('add_hilight_nav2'); 
+             $this->load->view('add_hilight_nav2');
              $this->load->view('signup_form');
              $this->load->view('footer');
          }
@@ -131,17 +131,35 @@ class User extends CI_Controller {
             }
             $data['team'] = $team;
             $data['userinfo'] = $this->user->get_user_by_id($school_id);
+            $data['people_num'] = $this->user->campus_race_verify($school_id);
             $this->load->view('header_homepage');
             $this->load->view('user_result', $data);
             $this->load->view('footer');
         }
+        if ($this->input->server('REQUEST_METHOD') == 'POST') {
+            $school_id = $this->session->userdata('id');
+            $quota_results = $this->people->get_race_quota();
+            $race_number = $this->people->get_race_number_by_school($school_id);
+
+            if (!$quota_results['rdb_m_status'] && $race_number['rdb_m_num']) exit(err_msg('1104'));
+            if (!$quota_results['rdb_f_status'] && $race_number['rdb_f_num']) exit(err_msg('1105'));
+            if (!$quota_results['rdb_elite_status'] && $race_number['rdb_elite_num']) exit(err_msg('1106'));
+            if (!$quota_results['race_m_status'] && $race_number['race_m_num']) exit(err_msg('1102'));
+            if (!$quota_results['race_f_status'] && $race_number['race_f_num']) exit(err_msg('1103'));
+            if (!$quota_results['race_elite_status'] && $race_number['race_elite_num']) exit(err_msg('1107'));
+            $err_code = '200';
+            exit(err_msg($err_code));
+        }
     }
 
     public function freeze() {
+        if ($this->input->server('REQUEST_METHOD') == 'GET') {
         $school_id = $this->session->userdata('id');
+        $this->user->campus_race_verify($school_id);
         $this->user->freeze($school_id);
         $this->session->set_userdata('editable', 0);
         redirect(site_url('user/payment'));
+        }
     }
 
     public function payment() {
@@ -153,6 +171,7 @@ class User extends CI_Controller {
             $userinfo = $this->user->get_user_by_id($school_id);
             $data['bill'] = $userinfo['bill'];
             $data['association_name'] = $userinfo['association_name'];
+            $data['campusrace'] = $userinfo['campusrace'];
             $this->load->view('header_homepage');
             $this->load->view('user_payment', $data);
             $this->load->view('footer');
@@ -205,23 +224,25 @@ class User extends CI_Controller {
         $filename = $userinfo['school'] . '.xlsx';
         $excel->setActiveSheetIndex(0)->setTitle('高校信息');
         $excel->getActiveSheet()
-            ->setCellValue('A1', '学校名称')
-            ->setCellValue('B1', '车协名称')
-            ->setCellValue('C1', '领队姓名')
-            ->setCellValue('D1', '电子邮箱')
-            ->setCellValue('E1', '手机号')
-            ->setCellValue('F1', '邮寄地址')
-            ->setCellValue('G1', '邮政编码')
-            ->setCellValue('H1', '费用合计');
+            ->setCellValue('A1', '学校ID')
+            ->setCellValue('B1', '学校名称')
+            ->setCellValue('C1', '车协名称')
+            ->setCellValue('D1', '领队姓名')
+            ->setCellValue('E1', '电子邮箱')
+            ->setCellValue('F1', '手机号')
+            ->setCellValue('G1', '邮寄地址')
+            ->setCellValue('H1', '邮政编码')
+            ->setCellValue('I1', '费用合计');
         $excel->getActiveSheet()
-            ->setCellValue('A2', $userinfo['school'])
-            ->setCellValue('B2', $userinfo['association_name'])
-            ->setCellValue('C2', $userinfo['leader'])
-            ->setCellValue('D2', $userinfo['mail'])
-            ->setCellValue('E2', $userinfo['tel'])
-            ->setCellValue('F2', $userinfo['address'])
-            ->setCellValue('G2', $userinfo['zipcode'])
-            ->setCellValue('H2', $userinfo['bill']);
+            ->setCellValue('A2', $userinfo['id'])
+            ->setCellValue('B2', $userinfo['school'])
+            ->setCellValue('C2', $userinfo['association_name'])
+            ->setCellValue('D2', $userinfo['leader'])
+            ->setCellValue('E2', $userinfo['mail'])
+            ->setCellValue('F2', $userinfo['tel'])
+            ->setCellValue('G2', $userinfo['address'])
+            ->setCellValue('H2', $userinfo['zipcode'])
+            ->setCellValue('I2', $userinfo['bill']);
 
         // Here comes sheet 2;
         $excel->createSheet(1);
@@ -235,13 +256,17 @@ class User extends CI_Controller {
             ->setCellValue('D1', '手机号')
             ->setCellValue('E1', '证件类型')
             ->setCellValue('F1', '证件编号')
-            ->setCellValue('G1', '个人赛')
-            ->setCellValue('H1', '团体赛')
-            ->setCellValue('I1', '住宿')
-            ->setCellValue('J1', '5.14晚餐')
-            ->setCellValue('K1', '5.15午餐')
-            ->setCellValue('L1', '清真')
-            ->setCellValue('M1', '费用');
+            ->setCellValue('G1', '男子山地大众')
+            ->setCellValue('H1', '男子山地精英')
+            ->setCellValue('I1', '女子山地')
+            ->setCellValue('J1', '男子公路大众')
+            ->setCellValue('K1', '男子公路精英')
+            ->setCellValue('L1', '女子公路')
+            ->setCellValue('M1', '团体赛')
+            ->setCellValue('N1', '5.5午餐+晚餐')
+            ->setCellValue('O1', '5.6午餐')
+            ->setCellValue('P1', '清真')
+            ->setCellValue('Q1', '费用');
 
         foreach ($individual_info as $key => $item) {
             $i = $key + 2;
@@ -252,13 +277,17 @@ class User extends CI_Controller {
                 ->setCellValue('D' . $i, $item['tel'])
                 ->setCellValue('E' . $i, $GLOBALS['ID_TYPE'][$item['id_type']])
                 ->setCellValue('F' . $i, $item['id_number'])
-                ->setCellValue('G' . $i, $GLOBALS['CAPURACE'][$item['race']])
-                ->setCellValue('H' . $i, $GLOBALS['JUDGE'][$item['ifteam']])
-                ->setCellValue('I' . $i, $GLOBALS['ACCOMMODATION'][$item['accommodation']])
-                ->setCellValue('J' . $i, $GLOBALS['JUDGE'][$item['dinner']])
-                ->setCellValue('K' . $i, $GLOBALS['JUDGE'][$item['lunch']])
-                ->setCellValue('L' . $i, $GLOBALS['JUDGE'][$item['islam']])
-                ->setCellValue('M' . $i, $item['fee']);
+                ->setCellValue('G' . $i, $GLOBALS['JUDGE'][$item['race']])
+                ->setCellValue('H' . $i, $GLOBALS['JUDGE'][$item['race_elite']])
+                ->setCellValue('I' . $i, $GLOBALS['JUDGE'][$item['race_f']])
+                ->setCellValue('J' . $i, $GLOBALS['JUDGE'][$item['rdb']])
+                ->setCellValue('K' . $i, $GLOBALS['JUDGE'][$item['rdb_elite']])
+                ->setCellValue('L' . $i, $GLOBALS['JUDGE'][$item['rdb_f']])
+                ->setCellValue('M' . $i, $GLOBALS['JUDGE'][$item['ifteam']])
+                ->setCellValue('N' . $i, $GLOBALS['JUDGE'][$item['dinner']])
+                ->setCellValue('O' . $i, $GLOBALS['JUDGE'][$item['lunch']])
+                ->setCellValue('P' . $i, $GLOBALS['JUDGE'][$item['islam']])
+                ->setCellValue('Q' . $i, $item['fee']);
         }
 
 

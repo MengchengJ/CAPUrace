@@ -97,12 +97,19 @@ $ERR_MSG = array(
     '1092' => '第{order}个人是参赛人员，参赛项目不得为空。',
     '1093' => '第{order}个人是男生，不可以参加女子组比赛。',
     '1094' => '第{order}个人是女生，不可以参加男子组比赛。',
-    '1095' => '第{order}个人是女生，不可以参加公路组比赛。',
+    '1095' => '第{order}个人不可以同时参加大众和精英组比赛。',
     '1096' => '参加公路赛人数不得超过{quota}人。',
-    '1097' => '公路赛名额仅剩{quota}人。',
+    '1097' => '抱歉，公路赛名额已满！',
     '1098' => '观众名额仅剩{quota}人。',
+    '1099' => '每个学校观赛人数不得超过{quota}人。',
     '1100' => '第{order}个人的团体赛选项不合法。',
     '1101' => '第{order}个人是观赛人员，不得参加团体赛。',
+    '1102' => '山地男子大众组名额已满！',
+    '1103' => '山地女子组名额已满！',
+    '1104' => '公路男子大众组名额已满！',
+    '1105' => '公路女子组名额已满！',
+    '1106' => '公路男子精英组名额已满！',
+    '1107' => '山地男子精英组名额已满！',
     // Team Registration Error.
     '2000' => '第{order}组第{order_ind}个人不合法。',
     '2001' => '第{order}组第{order_ind}个人与第{order1}组第{order1_ind}个人重复。',
@@ -142,20 +149,22 @@ $IFRACE = array(
 
 $CAPURACE_M = array(
     '0' => '不参加',
-    '1' => '男子大众组',
-    '2' => '男子精英组'
+    '1' => '山地男子组',
 );
 
 $CAPURACE_F = array(
     '0' => '不参加',
-    '3' => '女子组',
+    '1' => '山地女子组',
 );
 
-$CAPURACE = array(
+$CAPURDB_M = array(
     '0' => ' 不参加 ',
-    '1' => ' 男子大众组 ',
-    '2' => ' 男子精英组 ',
-    '3' => ' 女子组 ',
+    '1' => ' 公路男子组 ',
+);
+
+$CAPURDB_F = array(
+    '0' => ' 不参加 ',
+    '1' => ' 公路女子组 ',
 );
 
 $RACE = array(
@@ -163,10 +172,17 @@ $RACE = array(
     '1' => '参赛'
 );
 
-$RDB_QUOTA = 80;
-$RDB_QUOTA_PER_SCHOOL = 5;
+
+$RACE_M_QUOTA = 190;
+$RACE_ELITE_QUOTA = 190;
+$RACE_F_QUOTA = 190;
+$RDB_M_QUOTA = 150;
+$RDB_F_QUOTA = 55;
+$RDB_ELITE_QUOTA = 75;
+$RACE_TEAM_QUOTA = 60;
 
 $AUDIENCE_QUOTA = 230;
+$AUD_QUOTA_PER_SCHOOL = 3;
 
 $ACCOMMODATION = array(
     '0' => '不需要',
@@ -183,19 +199,20 @@ $ACCO_FEE = array(
 /*
  * Date and Time Settings
  */
-$SIGN_UP_DEADLINE = '2017-04-16';
+
+$SIGN_UP_DEADLINE = '2019-06-21';
 
 /*
  * Admin user list
  */
 $ADMIN = array(
-    '蓝宇' => '89ce71b4186b876b5e3634450b4412a2',
-    '阿喆' => '131be0ab69e93d7206fb1235c8887e74',
-    'capu' => '57e639b8250f5c728cf23280cc0e15ff'
+    '霜降' => '9ee1accf374c1862c39e2784f224d7fd',
+    '灰白' => '9ee1accf374c1862c39e2784f224d7fd',
+    'capu' => '9ee1accf374c1862c39e2784f224d7fd'
 );
 
-$ACCOUNTANT_PASS = '89ce71b4186b876b5e3634450b4412a2';
-$PRESIDENT_PASS = '131be0ab69e93d7206fb1235c8887e74';
+$ACCOUNTANT_PASS = '9ee1accf374c1862c39e2784f224d7fd';
+$PRESIDENT_PASS = '9ee1accf374c1862c39e2784f224d7fd';
 
 /*
  * Documentation titles.
@@ -206,9 +223,12 @@ $TITLES = array(
     'race-info-award' => '比赛奖品',
     'race-info-map' => '赛场与赛道',
     'race-info-process' => '比赛流程',
-    'race-info-racevideo' => '赛道视频',
     'activity' => '活动通知',
-    'register-readme' => '报名须知'
+    'register-readme' => '报名须知',
+    'competition-info-history' => '历史',
+    'competition-info-sodality' => '联谊',
+    'competition-info-event' => '赛事',
+    'competition-info' => '赛场视频',
 );
 $NOT_AVAILABLE_TEXT = "<h3>文档暂未更新，请稍后查看！</h3>";
 
